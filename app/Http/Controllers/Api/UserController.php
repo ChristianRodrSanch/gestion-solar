@@ -9,54 +9,57 @@ use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
-  public function index(Request $request)
-{
-    $q = trim((string) $request->query('q', ''));
-    $res = \App\Models\User::select('id','name','email','rol')
-        ->when($q !== '', function ($query) use ($q) {
-            $like = "%{$q}%";
-            $query->where(function ($w) use ($like, $q) {
-                // 🔍 Buscamos por nombre, email, rol o ID (exacto o parcial)
-                $w->where('name', 'like', $like)
-                  ->orWhere('email', 'like', $like)
-                  ->orWhere('rol', 'like', $like);
+    // 🔹 Listar todos los usuarios (admin panel)
+    public function index(Request $request)
+    {
+        $q = trim((string) $request->query('q', ''));
 
-                // Si lo que escribe el usuario es numérico, buscamos también por ID
-                if (is_numeric($q)) {
-                    $w->orWhere('id', (int)$q);
-                }
-            });
-        })
-        ->orderBy('id','asc')
-        ->get();
+        $res = User::with(['perfilCliente', 'perfilVendedor']) // 👈 Añadido
+            ->select('id', 'name', 'email', 'rol')
+            ->when($q !== '', function ($query) use ($q) {
+                $like = "%{$q}%";
+                $query->where(function ($w) use ($like, $q) {
+                    $w->where('name', 'like', $like)
+                        ->orWhere('email', 'like', $like)
+                        ->orWhere('rol', 'like', $like);
 
-    return response()->json($res);
-}
+                    if (is_numeric($q)) {
+                        $w->orWhere('id', (int)$q);
+                    }
+                });
+            })
+            ->orderBy('id', 'asc')
+            ->get();
 
+        return response()->json($res);
+    }
 
-public function vendedores(Request $request)
-{
-    $q = trim((string) $request->query('q', ''));
-    $res = \App\Models\User::where('rol', 'vendedor')
-        ->select('id','name','email')
-        ->when($q !== '', function ($query) use ($q) {
-            $like = "%{$q}%";
-            $query->where(function ($w) use ($like, $q) {
-                $w->where('name','like',$like)
-                  ->orWhere('email','like',$like);
-                if (is_numeric($q)) {
-                    $w->orWhere('id', (int)$q);
-                }
-            });
-        })
-        ->orderBy('id','asc')
-        ->get();
+    // 🔹 Listar solo vendedores (para /admin/vendedores)
+    public function vendedores(Request $request)
+    {
+        $q = trim((string) $request->query('q', ''));
 
-    return response()->json($res);
-}
+        $res = User::where('rol', 'vendedor')
+            ->with('perfilVendedor') // 👈 clave para traer telefono y zona
+            ->select('id', 'name', 'email', 'rol')
+            ->when($q !== '', function ($query) use ($q) {
+                $like = "%{$q}%";
+                $query->where(function ($w) use ($like, $q) {
+                    $w->where('name', 'like', $like)
+                        ->orWhere('email', 'like', $like);
 
+                    if (is_numeric($q)) {
+                        $w->orWhere('id', (int)$q);
+                    }
+                });
+            })
+            ->orderBy('id', 'asc')
+            ->get();
 
-    // PUT /api/users/{id} (opcional)
+        return response()->json($res);
+    }
+
+    // 🔹 Actualizar usuario (admin o propio)
     public function update(Request $request, $id)
     {
         $user = User::findOrFail($id);
@@ -79,7 +82,7 @@ public function vendedores(Request $request)
         return response()->json(['message' => 'Usuario actualizado correctamente']);
     }
 
-    // DELETE /api/users/{id} (opcional)
+    // 🔹 Eliminar usuario
     public function destroy($id)
     {
         $user = User::findOrFail($id);
