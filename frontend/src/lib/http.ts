@@ -72,7 +72,7 @@ export async function apiPostForm<T>(url: string, formData: FormData): Promise<T
     headers: {
       Accept: "application/json",
       ...authHeaders(),
-      // ❗ NO pongas Content-Type con FormData (el navegador añade el boundary)
+      //  NO pongas Content-Type con FormData (el navegador añade el boundary)
     },
     body: formData,
     credentials: "omit",

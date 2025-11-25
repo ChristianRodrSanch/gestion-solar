@@ -1,17 +1,19 @@
 import { ShoppingBag, Facebook, Twitter, Instagram, Linkedin } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const Footer = () => {
   return (
     <footer className="bg-secondary/50 border-t border-border">
       <div className="container mx-auto px-4 py-12">
         <div className="grid md:grid-cols-4 gap-8 mb-8">
+          {/* Marca */}
           <div>
             <div className="flex items-center gap-2 mb-4">
               <ShoppingBag className="h-6 w-6 text-primary" />
-              <span className="text-xl font-bold text-foreground">MarketHub</span>
+              <span className="text-xl font-bold text-foreground">Enerflux</span>
             </div>
             <p className="text-muted-foreground text-sm mb-4">
-              Tu plataforma de comercio profesional. Conectando negocios con el futuro.
+              Soluciones de energía solar y almacenamiento para hogares y empresas.
             </p>
             <div className="flex gap-3">
               <a href="#" className="p-2 bg-primary/10 rounded-lg hover:bg-primary/20 transition-colors">
@@ -28,40 +30,90 @@ const Footer = () => {
               </a>
             </div>
           </div>
-          
+
+          {/* Navegación real de la web */}
           <div>
-            <h4 className="font-semibold text-foreground mb-4">Empresa</h4>
+            <h4 className="font-semibold text-foreground mb-4">Navegación</h4>
             <ul className="space-y-2">
-              <li><a href="#" className="text-muted-foreground hover:text-primary transition-colors">Sobre Nosotros</a></li>
-              <li><a href="#" className="text-muted-foreground hover:text-primary transition-colors">Carreras</a></li>
-              <li><a href="#" className="text-muted-foreground hover:text-primary transition-colors">Blog</a></li>
-              <li><a href="#" className="text-muted-foreground hover:text-primary transition-colors">Prensa</a></li>
+              <li>
+                <Link
+                  to="/"
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                >
+                  Inicio
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/?scroll=productos"
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                >
+                  Productos
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/estudio-personalizado"
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                >
+                  Estudio personalizado
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/contacto"
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                >
+                  Contacto
+                </Link>
+              </li>
             </ul>
           </div>
-          
+
+          {/* Cuenta / usuario */}
           <div>
-            <h4 className="font-semibold text-foreground mb-4">Soporte</h4>
+            <h4 className="font-semibold text-foreground mb-4">Tu cuenta</h4>
             <ul className="space-y-2">
-              <li><a href="#" className="text-muted-foreground hover:text-primary transition-colors">Centro de Ayuda</a></li>
-              <li><a href="#" className="text-muted-foreground hover:text-primary transition-colors">Contacto</a></li>
-              <li><a href="#" className="text-muted-foreground hover:text-primary transition-colors">Estado del Servicio</a></li>
-              <li><a href="#" className="text-muted-foreground hover:text-primary transition-colors">API</a></li>
+              <li>
+                <Link
+                  to="/login"
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                >
+                  Iniciar sesión
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/register"
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                >
+                  Registrarse
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/mis-pedidos"
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                >
+                  Mis pedidos
+                </Link>
+              </li>
             </ul>
           </div>
-          
+
+          {/* Legal (placeholder, sin rutas raras) */}
           <div>
             <h4 className="font-semibold text-foreground mb-4">Legal</h4>
-            <ul className="space-y-2">
-              <li><a href="#" className="text-muted-foreground hover:text-primary transition-colors">Privacidad</a></li>
-              <li><a href="#" className="text-muted-foreground hover:text-primary transition-colors">Términos</a></li>
-              <li><a href="#" className="text-muted-foreground hover:text-primary transition-colors">Cookies</a></li>
-              <li><a href="#" className="text-muted-foreground hover:text-primary transition-colors">Licencias</a></li>
+            <ul className="space-y-2 text-sm text-muted-foreground">
+              <li>Aviso legal</li>
+              <li>Política de privacidad</li>
+              <li>Política de cookies</li>
             </ul>
           </div>
         </div>
-        
+
         <div className="pt-8 border-t border-border text-center text-sm text-muted-foreground">
-          <p>© 2024 MarketHub. Todos los derechos reservados.</p>
+          <p>© {new Date().getFullYear()} Enerflux. Todos los derechos reservados.</p>
         </div>
       </div>
     </footer>

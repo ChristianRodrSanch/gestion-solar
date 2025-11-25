@@ -12,7 +12,7 @@ class PerfilVendedor extends Model
     protected $primaryKey = 'id_usuario';
     public $incrementing = false;
     protected $keyType = 'int';
-    protected $fillable = ['id_usuario', 'telefono', 'zona'];
+    protected $fillable = ['id_usuario', 'telefono', 'zona','brand', 'company', 'website', 'message'];
 
     public function user()
     {

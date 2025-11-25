@@ -3,7 +3,7 @@ import { Users, BadgePercent, Package } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import BackButton from "@/components/BackButton";
-
+import VendorRequests from "@/pages/admin/VendorRequests";
 export default function AdminIndex() {
   return (
     <div className="p-6 space-y-6">
@@ -39,6 +39,12 @@ export default function AdminIndex() {
           <Link to="/admin/vendedores" className="mt-4">
             <Button className="w-full">
               <BadgePercent className="mr-2 h-4 w-4" /> Ver vendedores
+            </Button>
+          </Link>
+          <Link to="/vendors/requests" className="mt-4">
+            <Button className="w-full">
+              <BadgePercent className="mr-2 h-4 w-4" />
+              Solicitudes de registrados vendedor
             </Button>
           </Link>
         </Card>

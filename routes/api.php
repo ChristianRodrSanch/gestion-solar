@@ -12,7 +12,10 @@ use App\Http\Controllers\Api\ProductoController;
 use App\Http\Controllers\Api\StripeController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\ReviewController;
-
+use App\Http\Controllers\Api\VendorApprovalController;
+use App\Http\Controllers\Api\CustomStudyController;
+use App\Http\Controllers\Api\ContactController;
+use App\Http\Controllers\Api\MeController;
 /*
 |--------------------------------------------------------------------------
 | API ROUTES
@@ -28,6 +31,11 @@ use App\Http\Controllers\Api\ReviewController;
 Route::post('/login',    [AuthController::class, 'login']);
 Route::post('/logout',   [AuthController::class, 'logout'])->middleware('auth:sanctum');
 Route::post('/register', [RegisterController::class, 'store']);
+
+// Contacto
+// Contacto (público)
+Route::post('/contact', [ContactController::class, 'store']);
+
 
 /* =========================================================
 |  PRODUCTOS (público)
@@ -57,13 +65,24 @@ Route::middleware('auth:sanctum')->group(function () {
         return $r->user()->load(['perfilCliente', 'perfilVendedor']);
     });
 
-    Route::put('/users/me',            [UserController::class, 'updateSelf']);
-    Route::put('/users/me/profile',    [UserController::class, 'updateSelf']);
-    Route::put('/users/me/password',   [UserController::class, 'changePassword']);
+    // ---- Perfil propio ----
+    Route::get('/me', [MeController::class, 'profile']);
+    Route::put('/me', [MeController::class, 'updateProfile']);
+    Route::put('/me/password', [MeController::class, 'updatePassword']);
 
-    // Endpoints /me directos
-    Route::put('/me',                  [UserController::class, 'updateSelf']);
-    Route::put('/me/password',         [UserController::class, 'changePassword']);
+    // (Opcionales) aliases de compatibilidad, apuntando al mismo controlador
+    Route::get('/users/me', [MeController::class, 'profile']);
+    Route::put('/users/me', [MeController::class, 'updateProfile']);
+    Route::put('/users/me/profile', [MeController::class, 'updateProfile']);
+    Route::put('/users/me/password', [MeController::class, 'updatePassword']);
+
+    // Route::put('/users/me',            [UserController::class, 'updateSelf']);
+    // Route::put('/users/me/profile',    [UserController::class, 'updateSelf']);
+    // Route::put('/users/me/password',   [UserController::class, 'changePassword']);
+
+    // // Endpoints /me directos
+    // Route::put('/me',                  [UserController::class, 'updateSelf']);
+    // Route::put('/me/password',         [UserController::class, 'changePassword']);
 
     // ---- Carrito ----
     Route::get('/cart',          [CartController::class, 'show']);
@@ -89,7 +108,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/reviews/{review}', [ReviewController::class, 'destroy'])->whereNumber('review');
     // ---- Checkout (Stripe) ----
     Route::post('/checkout/sessions', [StripeController::class, 'createCheckoutSession']);
-
+    //_ --- estudio personalizado ----
+    Route::post('/study/request', [CustomStudyController::class, 'requestStudy']);
     // ---- Pedidos del cliente ----
     Route::get('/orders/by-session/{session}', [OrderController::class, 'showBySession']); // usado en pantalla de éxito
     Route::get('/orders/mine',                  [OrderController::class, 'index']);
@@ -115,6 +135,16 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\EnsureRole::class])->gro
     Route::post('/productos',              [ProductoController::class, 'store']);
     Route::put('/productos/{producto}',    [ProductoController::class, 'update']);
     Route::delete('/productos/{producto}', [ProductoController::class, 'destroy']);
+    // ==== Imágenes múltiples de producto (admin) ====
+    Route::get('/productos/{producto}/images', [ProductoController::class, 'listImages'])->whereNumber('producto');
+    Route::post('/productos/{producto}/images', [ProductoController::class, 'uploadImages'])->whereNumber('producto');
+    Route::post('/productos/{producto}/images/reorder', [ProductoController::class, 'reorderImages'])->whereNumber('producto');
+    Route::delete('/productos/images/{image}', [ProductoController::class, 'deleteImage'])->whereNumber('image');
+
+    // ==== aprobar o rechazar solicitudes de vendedor (admin) ====
+    Route::get('/vendors/requests', [UserController::class, 'vendorRequests']);
+    Route::post('/vendors/{user}/approve', [VendorApprovalController::class, 'approve']);
+    Route::post('/vendors/{user}/reject',  [VendorApprovalController::class, 'reject']);
 });
 
 /* =========================================================

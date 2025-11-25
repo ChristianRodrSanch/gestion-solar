@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Order;
+use App\Services\InvoiceService;
 use Dompdf\Dompdf;
 use Dompdf\Options;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -79,22 +80,30 @@ class OrderController extends Controller
     public function invoiceHtml(Request $req, Order $order, \App\Services\InvoiceService $invoices)
     {
         $this->authorize('view', $order);
+
+        // aseguramos relaciones
+        $order->loadMissing('user', 'items');
+
         $html = $invoices->renderHtml($order);
+
         return response($html, 200)->header('Content-Type', 'text/html; charset=UTF-8');
     }
 
-    public function invoicePdf(Request $req, Order $order, \App\Services\InvoiceService $invoices)
+    // DESCARGA PDF
+    public function invoicePdf(Request $req, Order $order, InvoiceService $invoices)
     {
         $this->authorize('downloadInvoice', $order);
+
+        $order->loadMissing('user', 'items');
+
         $pdf = $invoices->renderPdf($order);
         $filename = 'Factura-' . $order->id . '.pdf';
 
         return response($pdf, 200, [
-            'Content-Type'                => 'application/pdf',
-            'Content-Disposition'         => 'attachment; filename="' . $filename . '"',
-            'Cache-Control'               => 'private, max-age=0, must-revalidate',
-            'Pragma'                      => 'public',
-            // útil para que el front vea el nombre del archivo
+            'Content-Type'                  => 'application/pdf',
+            'Content-Disposition'           => 'attachment; filename="' . $filename . '"',
+            'Cache-Control'                 => 'private, max-age=0, must-revalidate',
+            'Pragma'                        => 'public',
             'Access-Control-Expose-Headers' => 'Content-Disposition',
         ]);
     }

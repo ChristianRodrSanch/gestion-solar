@@ -72,7 +72,7 @@ export default function CheckoutSuccess() {
       if (!order?.id) return;
       try {
         const res = await fetch(
-          `${import.meta.env.VITE_API_BASE_URL}/orders/${order.id}/invoice?embed=1`, // 👈 añade embed=1
+          `${import.meta.env.VITE_API_BASE_URL}/orders/${order.id}/invoice`, //  añade embed=1
           { headers: { Authorization: `Bearer ${localStorage.getItem("token") || ""}` } }
         );
         if (!res.ok) return;

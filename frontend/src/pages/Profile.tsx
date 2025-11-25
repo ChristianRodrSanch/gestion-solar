@@ -28,7 +28,13 @@ type Me = {
   perfilVendedor?: { telefono?: string | null; zona?: string | null } | null;
   perfilCliente?: {
     telefono?: string | null;
-    direccion?: string | null; // <- lo que guarda tu backend
+    direccion?: string | null; // texto libre
+    address_line1?: string | null;
+    address_line2?: string | null;
+    city?: string | null;
+    province?: string | null;
+    postal_code?: string | null;
+    country?: string | null;
   } | null;
 };
 
@@ -62,8 +68,8 @@ export default function UserProfile() {
     name: "",
     email: "",
     telefono: "",
-    direccion: "",     // texto libre (lo que guarda la API)
-    // normalizados (solo front, para componer "direccion")
+    direccion: "",
+
     line1: "",
     line2: "",
     city: "",
@@ -85,28 +91,37 @@ export default function UserProfile() {
   useEffect(() => {
     (async () => {
       try {
-        let data: Me | null = null;
-        try { data = await apiGet<Me>("/me"); } catch { /* fallback */ }
-        if (!data) {
+        let data: any = null;
+
+        try {
+          data = await apiGet<any>("/me");
+        } catch {
           const raw = localStorage.getItem("user");
           data = raw ? JSON.parse(raw) : null;
         }
         if (!data) throw new Error("No hay sesión");
 
         setMe(data);
+
+        const pc = data.perfilCliente ?? data.cliente ?? {};
+
         setForm((f: any) => ({
           ...f,
           name: data.name ?? "",
           email: data.email ?? "",
-          telefono: data.perfilVendedor?.telefono ?? data.perfilCliente?.telefono ?? "",
-          direccion: data.perfilCliente?.direccion ?? "",
+          telefono:
+            data.telefono ??
+            pc.telefono ??
+            data.perfilVendedor?.telefono ??
+            "",
+          direccion: data.direccion ?? pc.direccion ?? "",
           zona: data.perfilVendedor?.zona ?? "",
-          line1: "",
-          line2: "",
-          city: "",
-          region: "",
-          postal_code: "",
-          country: f.country || "ES",
+          line1: pc.address_line1 ?? "",
+          line2: pc.address_line2 ?? "",
+          city: pc.city ?? "",
+          region: pc.province ?? "",
+          postal_code: pc.postal_code ?? "",
+          country: pc.country ?? "ES",
         }));
       } catch {
         await alertError("No se pudo cargar tu perfil");
@@ -115,6 +130,10 @@ export default function UserProfile() {
       }
     })();
   }, []);
+
+
+
+
 
   const onChange = (k: string, v: any) => setForm((f: any) => ({ ...f, [k]: v }));
 
@@ -150,15 +169,33 @@ export default function UserProfile() {
         body.zona = form.zona ?? "";
       } else if (isCliente) {
         body.telefono = form.telefono ?? "";
-        body.direccion = direccionTexto; // 👈 único campo que persiste en tu backend
+        body.direccion = direccionTexto;          // texto libre
+        body.address_line1 = form.line1 || null;
+        body.address_line2 = form.line2 || null;
+        body.city = form.city || null;
+        body.province = form.region || null;
+        body.postal_code = form.postal_code || null;
+        body.country = form.country || "ES";
       }
 
       try {
         await apiPut("/me", body);
-      } catch {
-        if (me?.id) await apiPut(`/users/${me.id}`, body);
-        else throw new Error("No hay ID de usuario");
+      } catch (e: any) {
+        const status = e?.response?.status;
+
+        if (status === 404 || status === 405) {
+          // solo si el endpoint /me no existe en ese backend
+          if (me?.id) {
+            await apiPut(`/users/${me.id}`, body);
+          } else {
+            throw new Error("No hay ID de usuario");
+          }
+        } else {
+          // para 500, 422, 403... lanzamos el error para que lo vea el usuario
+          throw e;
+        }
       }
+
 
       // refresh cache local
       const next = { ...(me as any) };
@@ -186,20 +223,27 @@ export default function UserProfile() {
     if (!me) return;
     const ok = await confirm("Cancelar cambios", "Se perderán los cambios no guardados.", "Descartar");
     if (!ok) return;
+
+    const anyMe: any = me;
+    const pc = anyMe.perfilCliente ?? anyMe.cliente ?? {};
+
     setForm({
       name: me.name ?? "",
       email: me.email ?? "",
-      telefono: me.perfilVendedor?.telefono ?? me.perfilCliente?.telefono ?? "",
-      direccion: me.perfilCliente?.direccion ?? "",
+      telefono: anyMe.telefono ?? pc.telefono ?? "",
+      direccion: anyMe.direccion ?? pc.direccion ?? "",
       zona: me.perfilVendedor?.zona ?? "",
-      line1: "",
-      line2: "",
-      city: "",
-      region: "",
-      postal_code: "",
-      country: "ES",
+      line1: pc.address_line1 ?? "",
+      line2: pc.address_line2 ?? "",
+      city: pc.city ?? "",
+      region: pc.province ?? "",
+      postal_code: pc.postal_code ?? "",
+      country: pc.country ?? "ES",
     });
   };
+  ;
+
+
 
   /* -------- Cambiar contraseña -------- */
   const onChangePassword = async () => {

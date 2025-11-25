@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { apiGet } from "@/lib/api";
 import BackButton from "@/components/BackButton";
 
-type PerfilVend = { telefono?: string | null; zona?: string | null };
+type PerfilVend = { telefono?: string | null; zona?: string | null; brand?: string | null; };
 type Vendedor = { id: number; name: string; email: string; rol: string; perfil_vendedor?: PerfilVend };
 
 export default function VendedoresAdmin() {
@@ -55,6 +55,7 @@ export default function VendedoresAdmin() {
                 <th className="text-left p-2">Email</th>
                 <th className="text-left p-2">Teléfono</th>
                 <th className="text-left p-2">Zona</th>
+                <th className="text-left p-2">Marca</th>
               </tr>
             </thead>
             <tbody>
@@ -65,6 +66,7 @@ export default function VendedoresAdmin() {
                   <td className="p-2">{v.email}</td>
                   <td className="p-2">{v.perfil_vendedor?.telefono ?? "—"}</td>
                   <td className="p-2">{v.perfil_vendedor?.zona ?? "—"}</td>
+                  <td className="p-2">{v.perfil_vendedor?.brand ?? "—"}</td>
                 </tr>
               ))}
               {rows.length === 0 && (

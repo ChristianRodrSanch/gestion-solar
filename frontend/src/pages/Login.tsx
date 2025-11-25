@@ -43,10 +43,8 @@ export default function Login() {
       await alertSuccess("Inicio de sesión correcto"); // sin cuerpo extra
       navigate("/");
     } catch (err: any) {
-      // apiPostJson ya te formatea el mensaje; si quieres evitar “texto pequeño”, no lo pases
-      await alertError("Credenciales inválidas");
-      // Si prefieres mostrar detalle del servidor:
-      // await alertError("Credenciales inválidas", err?.message);
+      const msg = err?.message || "Credenciales inválidas";
+      await alertError(msg);
     } finally {
       setIsLoading(false);
     }

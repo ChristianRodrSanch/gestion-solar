@@ -10,12 +10,52 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
+// 👇 AÑADIR ESTOS IMPORTS
+use App\Models\Panel;
+use App\Models\Bateria;
+
 class ProductoController extends Controller
 {
     use AuthorizesRequests;
 
+    //       public function show($id)
+    // {
+    //     $producto = Producto::query()
+    //         ->leftJoin('users as v', 'v.id', '=', 'productos.id_vendedor')              //  JOIN vendedor
+    //         ->where('productos.id_producto', $id)
+    //         ->withCount(['productReviews as reviews_count'])
+    //         ->withAvg('productReviews as avg_rating', 'rating')
+    //         ->select('productos.*', DB::raw('v.name as vendedor_nombre'))               //  campo extra
+    //         ->firstOrFail();
+
+    //     // (si además añades panel/batería aquí, deja tu lógica como la tengas)
+    //     return response()->json($producto);
+    // }
+    // // GET /api/productos
+    // public function index(Request $request)
+    // {
+    //     $q = trim($request->query('q', ''));
+
+    //     $productos = Producto::query()
+    //         ->leftJoin('users as v', 'v.id', '=', 'productos.id_vendedor')              //  JOIN vendedor
+    //         ->when($q !== '', function ($query) use ($q) {
+    //             $like = "%{$q}%";
+    //             $query->where(function ($w) use ($like) {
+    //                 $w->where('productos.nombre', 'like', $like)                        // 👈 prefijo tabla
+    //                     ->orWhere('productos.categoria', 'like', $like)
+    //                     ->orWhere('productos.descripcion', 'like', $like);
+    //             });
+    //         })
+    //         ->withCount(['productReviews as reviews_count'])
+    //         ->withAvg('productReviews as avg_rating', 'rating')
+    //         ->select('productos.*', DB::raw('v.name as vendedor_nombre'))               // 👈 campo extra
+    //         ->orderBy('productos.id_producto', 'desc')
+    //         ->get();
+
+    //     return response()->json($productos);
+    // }
     // GET /api/productos
-     public function index(Request $request)
+    public function index(Request $request)
     {
         $q = trim($request->query('q', ''));
 
@@ -24,26 +64,47 @@ class ProductoController extends Controller
                 $like = "%{$q}%";
                 $query->where(function ($w) use ($like) {
                     $w->where('nombre', 'like', $like)
-                      ->orWhere('categoria', 'like', $like)
-                      ->orWhere('descripcion', 'like', $like);
+                        ->orWhere('categoria', 'like', $like)
+                        ->orWhere('descripcion', 'like', $like);
                 });
             })
-            // 👇 usa la relación productReviews (NO reviews)
+            //  usa la relación productReviews (NO reviews)
             ->withCount(['productReviews as reviews_count'])
             ->withAvg('productReviews as avg_rating', 'rating')
+            
+            //  CARGAR SIEMPRE CARACTERÍSTICAS
+            ->with(['panel', 'bateria'])
             ->orderBy('id_producto', 'desc')
             ->get();
 
         return response()->json($productos);
     }
 
+    // ===== util privado =====
+    private function galleryDir($productoId)
+    {
+        return "productos_gallery/{$productoId}";
+    }
+
+    private function listGallery($productoId)
+    {
+        $dir = $this->galleryDir($productoId);
+        $files = Storage::disk('public')->exists($dir) ? Storage::disk('public')->files($dir) : [];
+        // devolver rutas relativas tipo productos_gallery/ID/archivo.jpg
+        return array_values($files);
+    }
+
+
     public function show($id)
     {
         $producto = Producto::where('id_producto', $id)
             ->withCount(['productReviews as reviews_count'])
             ->withAvg('productReviews as avg_rating', 'rating')
+            //  CARGAR SIEMPRE CARACTERÍSTICAS
+            ->with(['panel', 'bateria'])
             ->firstOrFail();
 
+        $producto->galeria = $this->listGallery($producto->id_producto);
         return response()->json($producto);
     }
 
@@ -60,6 +121,15 @@ class ProductoController extends Controller
             'stock'        => 'required|integer|min:0',
             'id_vendedor'  => 'nullable|integer|exists:users,id',
             'imagen'       => 'nullable|image|max:2048',
+
+            // 👇 Opcionales por categoría (NO obligatorios para no romper)
+            'modelo_panel'   => 'nullable|string|max:100',
+            'eficiencia'     => 'nullable|numeric',
+            'superficie'     => 'nullable|numeric',
+            'produccion'     => 'nullable|numeric',
+            'modelo_bateria' => 'nullable|string|max:100',
+            'capacidad'      => 'nullable|numeric',
+            'autonomia'      => 'nullable|numeric',
         ]);
 
         // Si el creador es vendor, fuerza su id
@@ -75,8 +145,40 @@ class ProductoController extends Controller
         }
 
         $producto = Producto::create($validated);
+        // GALERÍA (crear)
+        if ($request->hasFile('galeria')) {
+            foreach ($request->file('galeria') as $file) {
+                if ($file->isValid()) {
+                    $path = $file->store($this->galleryDir($producto->id_producto), 'public');
+                }
+            }
+        }
 
-        return response()->json($producto, 201);
+        // === Características específicas por categoría (crear) ===
+        if ($producto->categoria === 'panel') {
+            $panelData = $request->only(['modelo_panel', 'eficiencia', 'superficie', 'produccion']);
+            if (!empty($panelData['modelo_panel']) || isset($panelData['eficiencia']) || isset($panelData['superficie']) || isset($panelData['produccion'])) {
+                Panel::create([
+                    'id_producto' => $producto->id_producto,
+                    'modelo'      => $panelData['modelo_panel'] ?? null,
+                    'eficiencia'  => $panelData['eficiencia'] ?? 0,
+                    'superficie'  => $panelData['superficie'] ?? 0,
+                    'produccion'  => $panelData['produccion'] ?? 0,
+                ]);
+            }
+        } elseif ($producto->categoria === 'bateria') {
+            $batData = $request->only(['modelo_bateria', 'capacidad', 'autonomia']);
+            if (!empty($batData['modelo_bateria']) || isset($batData['capacidad']) || isset($batData['autonomia'])) {
+                Bateria::create([
+                    'id_producto' => $producto->id_producto,
+                    'modelo'      => $batData['modelo_bateria'] ?? null,
+                    'capacidad'   => $batData['capacidad'] ?? 0,
+                    'autonomia'   => $batData['autonomia'] ?? 0,
+                ]);
+            }
+        }
+
+        return response()->json($producto->load(['panel', 'bateria']), 201);
     }
 
     // PUT /api/productos/{producto}
@@ -92,6 +194,15 @@ class ProductoController extends Controller
             'stock'        => 'sometimes|integer|min:0',
             'id_vendedor'  => 'nullable|integer|exists:users,id',
             'imagen'       => 'nullable|image|max:2048',
+
+            // 👇 Opcionales por categoría
+            'modelo_panel'   => 'nullable|string|max:100',
+            'eficiencia'     => 'nullable|numeric',
+            'superficie'     => 'nullable|numeric',
+            'produccion'     => 'nullable|numeric',
+            'modelo_bateria' => 'nullable|string|max:100',
+            'capacidad'      => 'nullable|numeric',
+            'autonomia'      => 'nullable|numeric',
         ]);
 
         // vendor no reasigna vendedor
@@ -110,9 +221,77 @@ class ProductoController extends Controller
             $data['imagen'] = $request->file('imagen')->store('productos', 'public');
         }
 
+        $categoriaAnterior = $producto->categoria;
         $producto->update($data);
 
+        // === Actualizar/crear características por categoría ===
+        if ($producto->categoria === 'panel') {
+            $panelData = $request->only(['modelo_panel', 'eficiencia', 'superficie', 'produccion']);
+            if (!empty($panelData['modelo_panel']) || isset($panelData['eficiencia']) || isset($panelData['superficie']) || isset($panelData['produccion'])) {
+                $panel = $producto->panel()->first();
+                if (!$panel) $panel = new Panel(['id_producto' => $producto->id_producto]);
+                if (!empty($panelData['modelo_panel'])) $panel->modelo = $panelData['modelo_panel'];
+                if (isset($panelData['eficiencia']))    $panel->eficiencia = $panelData['eficiencia'];
+                if (isset($panelData['superficie']))    $panel->superficie = $panelData['superficie'];
+                if (isset($panelData['produccion']))    $panel->produccion = $panelData['produccion'];
+                $panel->save();
+            }
+            // Si cambió de otra categoría a panel, limpia batería previa
+            if ($categoriaAnterior !== 'panel') {
+                $producto->bateria()?->delete();
+            }
+        } elseif ($producto->categoria === 'bateria') {
+            $batData = $request->only(['modelo_bateria', 'capacidad', 'autonomia']);
+            if (!empty($batData['modelo_bateria']) || isset($batData['capacidad']) || isset($batData['autonomia'])) {
+                $bat = $producto->bateria()->first();
+                if (!$bat) $bat = new Bateria(['id_producto' => $producto->id_producto]);
+                if (!empty($batData['modelo_bateria'])) $bat->modelo = $batData['modelo_bateria'];
+                if (isset($batData['capacidad']))       $bat->capacidad = $batData['capacidad'];
+                if (isset($batData['autonomia']))       $bat->autonomia = $batData['autonomia'];
+                $bat->save();
+            }
+            // Si cambió de otra categoría a batería, limpia panel previo
+            if ($categoriaAnterior !== 'bateria') {
+                $producto->panel()?->delete();
+            }
+        } else {
+            // Si cambió a otra categoría distinta, limpia restos
+            if ($request->filled('categoria') && $request->input('categoria') !== $categoriaAnterior) {
+                $producto->panel()?->delete();
+                $producto->bateria()?->delete();
+            }
+        }
+        // === GALERÍA (update) ===
+        // mantener solo las que vengan en keep_galeria[], borrar resto
+        $keep = $request->input('keep_galeria', []); // rutas relativas
+        $dir = $this->galleryDir($producto->id_producto);
+
+        if (Storage::disk('public')->exists($dir)) {
+            $current = Storage::disk('public')->files($dir);
+            $toDelete = array_diff($current, $keep);
+            foreach ($toDelete as $del) {
+                Storage::disk('public')->delete($del);
+            }
+        }
+
+        // subir nuevas
+        if ($request->hasFile('galeria')) {
+            foreach ($request->file('galeria') as $file) {
+                if ($file->isValid()) {
+                    $file->store($dir, 'public');
+                }
+            }
+        }
+
+        // devolver con galería incluida
+        $producto = $producto->fresh();
+        $producto->panel = isset($producto->panel) ? $producto->panel : null; // no toco tu lógica
+        $producto->bateria = isset($producto->bateria) ? $producto->bateria : null;
+        $producto->galeria = $this->listGallery($producto->id_producto);
         return response()->json($producto);
+
+
+        return response()->json($producto->load(['panel', 'bateria']));
     }
 
     // DELETE /api/productos/{producto}
@@ -131,6 +310,10 @@ class ProductoController extends Controller
             ) {
                 Storage::disk('public')->delete($producto->imagen);
             }
+
+            // Por si acaso (limpieza explícita)
+            $producto->panel()?->delete();
+            $producto->bateria()?->delete();
 
             $producto->delete();
         });

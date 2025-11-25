@@ -19,9 +19,16 @@ class RegisterRequest extends FormRequest
             'email'     => ['required', 'email', 'max:190', 'unique:users,email'],
             'password'  => ['required', 'string', 'min:8'],
             'rol'       => ['required', Rule::in(['cliente', 'vendedor'])],
-            'telefono'  => ['required', 'string', 'max:30'],
+            'telefono' => 'nullable|string|max:30',
+
             'zona'      => ['required_if:rol,vendedor', 'string', 'max:120'],
-            'direccion' => ['required_if:rol,cliente', 'string', 'max:190'],
+            'direccion' => ['nullable', 'string', 'max:255'],
+            // ⬇⬇⬇ CAMPOS EXTRA DEL VENDEDOR ⬇⬇⬇
+            'vendor_brand'   => ['nullable', 'string', 'max:150'],
+            'vendor_company' => ['nullable', 'string', 'max:150'],
+            'vendor_website' => ['nullable', 'string', 'max:200'],
+            'vendor_message' => ['nullable', 'string', 'max:1000'],
+
         ];
     }
 

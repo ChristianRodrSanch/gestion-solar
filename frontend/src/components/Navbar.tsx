@@ -1,4 +1,4 @@
-import { ShoppingBag, User, ArrowLeft } from "lucide-react";
+import { ShoppingBag, User, ArrowLeft, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate, NavLink, useLocation } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
@@ -13,8 +13,8 @@ const Navbar = () => {
   const location = useLocation();
   const [authUser, setAuthUser] = useState<UserMini | null>(null);
   const { totalItems } = useCart();
-  const itemCount = totalItems;
   const [showCart, setShowCart] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const refreshAuth = () => {
     const raw = localStorage.getItem("user");
@@ -40,20 +40,6 @@ const Navbar = () => {
 
   const isLoggedIn = !!authUser;
 
-  // 👇 Navega a "/" si hace falta y luego hace scroll suave a la sección
-  const goToSection = (id: string) => {
-    const scroll = () => {
-      const el = document.getElementById(id);
-      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-    };
-    if (location.pathname !== "/") {
-      navigate("/", { state: { scrollTo: id } });
-      // el scroll se hará en Index (ver paso 2)
-    } else {
-      scroll();
-    }
-  };
-
   const logout = async () => {
     const ok = await confirm("Cerrar sesión", "¿Seguro que quieres salir?", "Sí, salir");
     if (!ok) return;
@@ -67,18 +53,19 @@ const Navbar = () => {
           Accept: "application/json",
         },
       });
-    } catch { }
+    } catch {}
 
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     window.dispatchEvent(new Event("auth:changed"));
     await alertSuccess("Sesión cerrada");
     navigate("/");
+    setMobileOpen(false);
   };
 
   const active = (path: string) =>
     location.pathname === path ||
-      (path === "/admin" && location.pathname.startsWith("/admin"))
+    (path === "/admin" && location.pathname.startsWith("/admin"))
       ? "text-primary font-medium"
       : "text-foreground";
 
@@ -88,16 +75,24 @@ const Navbar = () => {
     location.pathname.startsWith("/admin/vendedores");
   const isInAdmin = isAdminRoot || isAdminSub;
 
+  const closeMobileAnd = (fn: () => void) => {
+    fn();
+    setMobileOpen(false);
+  };
+
   return (
     <>
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border shadow-sm">
+        {/* Barra superior */}
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          {/* Izquierda */}
+          {/* IZQUIERDA: logo / back */}
           {isInAdmin ? (
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate(isAdminRoot ? "/" : "/admin")}
+              onClick={() =>
+                isAdminRoot ? navigate("/") : navigate("/admin")
+              }
               className="flex items-center gap-2"
               title={isAdminRoot ? "Volver al inicio" : "Volver al panel"}
             >
@@ -107,27 +102,45 @@ const Navbar = () => {
           ) : (
             <div
               className="flex items-center gap-2 cursor-pointer"
-              onClick={() => navigate("/")}
+              onClick={() => closeMobileAnd(() => navigate("/"))}
             >
               <ShoppingBag className="h-6 w-6 text-primary" />
               <span className="text-xl font-bold text-foreground">Enerflux</span>
             </div>
           )}
 
-          {/* Centro */}
+          {/* CENTRO: menú escritorio */}
           <div className="hidden md:flex items-center gap-8">
-            <button onClick={() => navigate("/?scroll=inicio")} className="text-foreground hover:text-primary transition-colors">
+            <button
+              onClick={() => navigate("/?scroll=inicio")}
+              className="text-foreground hover:text-primary transition-colors"
+            >
               Inicio
             </button>
-            <button onClick={() => navigate("/?scroll=productos")} className="text-foreground hover:text-primary transition-colors">
+            <button
+              onClick={() => navigate("/?scroll=productos")}
+              className="text-foreground hover:text-primary transition-colors"
+            >
               Productos
             </button>
-            <button onClick={() => navigate("/?scroll=contacto")} className="text-foreground hover:text-primary transition-colors">
+            <button
+              onClick={() => navigate("/estudio-personalizado")}
+              className="text-foreground hover:text-primary transition-colors"
+            >
+              Estudio personalizado
+            </button>
+            <button
+              onClick={() => navigate("/contacto")}
+              className="text-foreground hover:text-primary transition-colors"
+            >
               Contacto
             </button>
 
             {isLoggedIn && (
-              <NavLink to="/mis-pedidos" className="text-foreground hover:text-primary transition-colors">
+              <NavLink
+                to="/mis-pedidos"
+                className="text-foreground hover:text-primary transition-colors"
+              >
                 Mis pedidos
               </NavLink>
             )}
@@ -142,43 +155,161 @@ const Navbar = () => {
             )}
           </div>
 
-          {/* Derecha */}
-          <div className="flex items-center gap-4">
-            <div className="relative cursor-pointer" onClick={() => setShowCart(true)}>
-              <i className="pi pi-shopping-cart text-xl text-foreground hover:text-primary transition"></i>
-              {itemCount > 0 && (
+          {/* DERECHA: carrito + auth + hamburguesa */}
+          <div className="flex items-center gap-3">
+            {/* Carrito */}
+            <div
+              className="relative cursor-pointer"
+              onClick={() => setShowCart(true)}
+            >
+              <i className="pi pi-shopping-cart text-xl text-foreground hover:text-primary transition" />
+              {totalItems > 0 && (
                 <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs font-semibold rounded-full h-5 w-5 flex items-center justify-center">
-                  {itemCount}
+                  {totalItems}
                 </span>
               )}
             </div>
 
-            {authUser ? (
-              <>
-                <span className="hidden sm:inline text-sm text-muted-foreground">
-                  {authUser.name} · {authUser.rol}
-                </span>
-                <Button variant="outline" size="sm" onClick={() => navigate("/profile")}>
-                  <User className="h-4 w-4 mr-2" />
-                  Perfil
-                </Button>
-                <Button variant="outline" size="sm" onClick={logout}>
-                  Cerrar sesión
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button variant="outline" size="sm" onClick={() => navigate("/login")}>
-                  <User className="h-4 w-4 mr-2" />
-                  Ingresar
-                </Button>
-                <Button variant="default" size="sm" className="hidden sm:inline-flex" onClick={() => navigate("/register")}>
-                  Registrarse
-                </Button>
-              </>
-            )}
+            {/* Auth escritorio */}
+            <div className="hidden md:flex items-center gap-2">
+              {authUser ? (
+                <>
+                  <span className="hidden sm:inline text-sm text-muted-foreground">
+                    {authUser.name}
+                  </span>
+                  <Button variant="outline" size="sm" onClick={() => navigate("/profile")}>
+                    <User className="h-4 w-4 mr-2" />
+                    Perfil
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={logout}>
+                    Cerrar sesión
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button variant="outline" size="sm" onClick={() => navigate("/login")}>
+                    <User className="h-4 w-4 mr-2" />
+                    Ingresar
+                  </Button>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="hidden sm:inline-flex"
+                    onClick={() => navigate("/register")}
+                  >
+                    Registrarse
+                  </Button>
+                </>
+              )}
+            </div>
+
+            {/* Botón hamburguesa SOLO mobile */}
+            <button
+              className="md:hidden inline-flex items-center justify-center rounded-md border border-border p-1.5"
+              onClick={() => setMobileOpen((o) => !o)}
+              aria-label="Abrir menú"
+            >
+              {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
           </div>
         </div>
+
+        {/* MENÚ MOBILE desplegable */}
+        {mobileOpen && (
+          <div className="md:hidden border-t border-border bg-background">
+            <div className="container mx-auto px-4 py-3 flex flex-col gap-3">
+              <button
+                className="text-left text-foreground hover:text-primary transition-colors"
+                onClick={() => closeMobileAnd(() => navigate("/?scroll=inicio"))}
+              >
+                Inicio
+              </button>
+              <button
+                className="text-left text-foreground hover:text-primary transition-colors"
+                onClick={() => closeMobileAnd(() => navigate("/?scroll=productos"))}
+              >
+                Productos
+              </button>
+              <button
+                className="text-left text-foreground hover:text-primary transition-colors"
+                onClick={() => closeMobileAnd(() => navigate("/estudio-personalizado"))}
+              >
+                Estudio personalizado
+              </button>
+              <button
+                className="text-left text-foreground hover:text-primary transition-colors"
+                onClick={() => closeMobileAnd(() => navigate("/contacto"))}
+              >
+                Contacto
+              </button>
+
+              {isLoggedIn && (
+                <button
+                  className="text-left text-foreground hover:text-primary transition-colors"
+                  onClick={() => closeMobileAnd(() => navigate("/mis-pedidos"))}
+                >
+                  Mis pedidos
+                </button>
+              )}
+
+              {isAdmin && (
+                <button
+                  className={`text-left transition-colors ${active("/admin")}`}
+                  onClick={() => closeMobileAnd(() => navigate("/admin"))}
+                >
+                  Panel (Admin)
+                </button>
+              )}
+
+              <div className="border-t border-border pt-3 mt-2 flex flex-col gap-2">
+                {authUser ? (
+                  <>
+                    <span className="text-sm text-muted-foreground">
+                      Sesión: {authUser.name}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="justify-start"
+                      onClick={() => closeMobileAnd(() => navigate("/profile"))}
+                    >
+                      <User className="h-4 w-4 mr-2" />
+                      Perfil
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="justify-start"
+                      onClick={logout}
+                    >
+                      Cerrar sesión
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="justify-start"
+                      onClick={() => closeMobileAnd(() => navigate("/login"))}
+                    >
+                      <User className="h-4 w-4 mr-2" />
+                      Ingresar
+                    </Button>
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="justify-start"
+                      onClick={() => closeMobileAnd(() => navigate("/register"))}
+                    >
+                      Registrarse
+                    </Button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </nav>
 
       <CartSidebar visible={showCart} onHide={() => setShowCart(false)} />

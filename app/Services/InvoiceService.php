@@ -8,47 +8,71 @@ use Dompdf\Options;
 
 class InvoiceService
 {
-    public function buildSeller(): array
-    {
-        return [
-            'name'    => env('INVOICE_SELLER_NAME', 'ENERFLUX'),
-            'vat'     => env('INVOICE_SELLER_VAT', 'ESX12345678'),
-            'address' => env('INVOICE_SELLER_ADDRESS', 'C/ Renovable, 123 · 04001 Almería'),
-            'email'   => env('INVOICE_SELLER_EMAIL', 'info@enerflux.local'),
-            'phone'   => env('INVOICE_SELLER_PHONE', '+34 600 000 000'),
-        ];
-    }
-
-    public function logoData(): ?string
-    {
-        $path = public_path('brand/enerflux-logo.png'); // asegúrate de que exista
-        if (!is_file($path)) return null;
-        return 'data:image/png;base64,' . base64_encode(file_get_contents($path));
-    }
-
+    /**
+     * Genera el HTML de la factura usando la vista Blade invoices.show
+     */
     public function renderHtml(Order $order): string
     {
-        $order->load('items');
+        // Aseguramos usuario e items
+        $order->loadMissing('user', 'items');
 
+        // Normalizamos billing_snapshot (string JSON o array)
+        $raw = $order->billing_snapshot;
+
+        if (is_string($raw)) {
+            $snapshot = json_decode($raw, true) ?: [];
+        } elseif (is_array($raw)) {
+            $snapshot = $raw;
+        } else {
+            $snapshot = [];
+        }
+
+        $customer = $snapshot['customer'] ?? [];
+        $shipping = $snapshot['shipping'] ?? [];
+
+        // Datos fijos del vendedor
+        $seller = [
+            'name'    => 'Enerflux',
+            'address' => 'C/ Renovable, 123 · 04001 Almería',
+            'email'   => 'info@enerflux.local',
+            'phone'   => '+34 600 000 000',
+            'vat'     => 'ESX12345678',
+            // si quieres IBAN / banco puedes añadirlos
+            'bank_name' => 'Banco Santander',
+            'iban'      => 'ES12 3456 7891',
+            'swift'     => 'ABCDESM1XXX',
+        ];
+
+        // Logo en base64 para Dompdf
+        $logoData = null;
+        $logoPath = public_path('brand/Enerflux.png'); // asegúrate de que existe
+
+        if (is_readable($logoPath)) {
+            $type = pathinfo($logoPath, PATHINFO_EXTENSION);
+            $data = file_get_contents($logoPath);
+            $logoData = 'data:image/' . $type . ';base64,' . base64_encode($data);
+        }
+
+        // Renderizamos la vista
         return view('invoices.show', [
             'order'    => $order,
-            'seller'   => $this->buildSeller(),
-            'customer' => $order->billing_snapshot['customer'] ?? [],
-            'shipping' => $order->billing_snapshot['shipping'] ?? [],
-            'logoData' => $this->logoData(),
+            'seller'   => $seller,
+            'logoData' => $logoData,
+            'customer' => $customer,
+            'shipping' => $shipping,
         ])->render();
     }
 
+    /**
+     * Genera el PDF (bytes) a partir del HTML anterior.
+     */
     public function renderPdf(Order $order): string
     {
-        $html = $this->renderHtml($order);
+        $options = new Options();
+        $options->set('isRemoteEnabled', true);
 
-        $opts = new Options();
-        $opts->set('isRemoteEnabled', true);
-        $opts->set('isHtml5ParserEnabled', true);
-
-        $dompdf = new Dompdf($opts);
-        $dompdf->loadHtml($html, 'UTF-8');
+        $dompdf = new Dompdf($options);
+        $dompdf->loadHtml($this->renderHtml($order));
         $dompdf->setPaper('A4', 'portrait');
         $dompdf->render();
 

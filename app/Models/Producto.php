@@ -35,6 +35,23 @@ class Producto extends Model
         // fk = producto_id en product_reviews ; pk = id_producto en productos
         return $this->hasMany(ProductReview::class, 'producto_id', 'id_producto');
     }
+
+    public function panel()
+    {
+        return $this->hasOne(Panel::class, 'id_producto', 'id_producto');
+    }
+
+    public function bateria()
+    {
+        return $this->hasOne(Bateria::class, 'id_producto', 'id_producto');
+    }
+    public function images()
+    {
+        return $this->hasMany(\App\Models\ProductImage::class, 'producto_id', 'id_producto')
+            ->orderBy('sort_order')
+            ->orderBy('id');
+    }
+
     protected $casts = [
         'precio_base' => 'float',
         'stock'       => 'int',

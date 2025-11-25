@@ -24,6 +24,9 @@ class PerfilCliente extends Model
         'country',
     ];
 
+    public $timestamps = false; // Desactivar timestamps si no se usan
+
+
     public function user()
     {
         return $this->belongsTo(User::class, 'id_usuario');

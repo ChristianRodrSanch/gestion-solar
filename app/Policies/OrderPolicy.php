@@ -10,7 +10,7 @@ class OrderPolicy
     // puede ver un pedido concreto
     public function view(User $user, Order $order): bool
     {
-        return $user->id === $order->user_id || in_array($user->role, ['admin']);
+        return $user->id === $order->user_id || in_array(strtolower($user->rol), ['admin', 'administrador']);
     }
 
     // listar “mis pedidos”

@@ -24,6 +24,7 @@ class Kernel extends HttpKernel
         ValidatePostSize::class,
         TrimStrings::class,
         ConvertEmptyStringsToNull::class,
+        'vendor.approved' => \App\Http\Middleware\EnsureVendorApproved::class,
     ];
 
     /**

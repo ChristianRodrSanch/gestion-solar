@@ -342,4 +342,34 @@ All colors MUST be HSL.
 .p-button:focus, .p-button:focus-visible { box-shadow: none !important; outline: none !important; }
 .btn:focus-visible { box-shadow: 0 0 0 3px hsl(var(--primary) / .25); }
 
+/* estilos css video presentacion */
+
+@layer utilities {
+  .icon-sun {
+    animation: spin 5s linear infinite;
+  }
+
+  .icon-panel {
+    animation: bounce 2s ease-in-out infinite;
+  }
+
+  .icon-battery {
+    animation: flash 1s ease-in-out infinite;
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+
+  @keyframes flash {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+}
 

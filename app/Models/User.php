@@ -27,7 +27,7 @@ class User extends Authenticatable
      *
      * @var array<int, string>
      */
-    protected $fillable = ['name', 'email', 'password', 'rol'];
+    protected $fillable = ['name', 'email', 'password', 'rol','vendor_status','vendor_note'];
 
 
     /**
@@ -74,7 +74,7 @@ class User extends Authenticatable
     }
     public function perfilCliente(): HasOne
     {
-        return $this->hasOne(PerfilCliente::class, 'id_usuario');
+        return $this->hasOne(PerfilCliente::class, 'id_usuario','id');
     }
 
     // Helper rápido para chequear rol

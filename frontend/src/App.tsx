@@ -13,6 +13,8 @@ import NotFound from "@/pages/NotFound";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import ProductDetail from "@/pages/ProductDetail";
+import EstudioPersonalizado from "@/pages/EstudioPersonalizado";
+import Contacto from "@/pages/Contacto";
 
 // Páginas auth del cliente
 import CheckoutSuccess from "@/pages/CheckoutSuccess";
@@ -26,7 +28,7 @@ import AdminIndex from "@/pages/admin/Index";
 import UsersAdmin from "@/pages/admin/Users";
 import VendedoresAdmin from "@/pages/admin/Vendedores";
 import ProductosAdmin from "@/pages/admin/Productos";
-
+import VendorRequests from "@/pages/admin/VendorRequests";
 // PrimeReact y estilos
 import { PrimeReactProvider } from "primereact/api";
 import "primereact/resources/themes/lara-light-blue/theme.css";
@@ -57,6 +59,8 @@ const App = () => (
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="*" element={<NotFound />} />
+                <Route path="/estudio-personalizado" element={<EstudioPersonalizado />} />
+                <Route path="/contacto" element={<Contacto />} /> 
 
                 {/* Cliente autenticado */}
                 <Route path="/checkout/success" element={<CheckoutSuccess />} />
@@ -97,6 +101,15 @@ const App = () => (
                     </AdminRoute>
                   }
                 />
+                <Route
+                  path="/vendors/requests"
+                  element={
+                    <AdminRoute>
+                      <VendorRequests />
+                    </AdminRoute>
+                  }
+                />
+
                 <Route
                   path="/admin/productos"
                   element={

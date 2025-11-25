@@ -19,6 +19,7 @@ import AdminIndex from "@/pages/admin/Index";
 import UsersAdmin from "@/pages/admin/Users";
 import VendedoresAdmin from "@/pages/admin/Vendedores";
 import ProductosAdmin from "@/pages/admin/Productos";
+import VendorRequests from "@/pages/admin/VendorRequests";
 
 export default function AppRoutes() {
   return (
@@ -68,6 +69,8 @@ export default function AppRoutes() {
           </AdminRoute>
         }
       />
+      <Route path="/admin/vendors/requests" element={<VendorRequests />} />
+
       <Route
         path="/admin/productos"
         element={
